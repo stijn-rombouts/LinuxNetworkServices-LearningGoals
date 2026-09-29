@@ -5,6 +5,8 @@
     ./base-configuration.nix
     ./disk-config.nix
     ./services/dnsmasq.nix
+    ./services/samba.nix
+    ./services/openldap.nix
   ];
 
   # Proxmox VM with UEFI boot - systemd-boot from base-configuration.nix is used
@@ -30,7 +32,7 @@
   networking.defaultGateway = "10.0.69.1";
   networking.nameservers = [ "127.0.0.1" "1.1.1.1" ];
 
-  # Disable the firewall entirely
+  # Disable the host firewall entirely (firewalling is handled at the Proxmox VE hypervisor level)
   networking.firewall.enable = false;
 
   # Enable Docker

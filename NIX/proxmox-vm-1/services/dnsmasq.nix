@@ -39,10 +39,4 @@
       ];
     };
   };
-
-  # Firewall rules for DNS and DHCP
-  networking.firewall = {
-    allowedUDPPorts = [ 53 67 ];
-    allowedTCPPorts = [ 53 ];
-  };
 }

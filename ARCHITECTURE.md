@@ -46,21 +46,21 @@ flowchart TB
 
 ## 📋 Detailoverzicht per Machine
 
-### 1. 🖥️ VM 1: Netwerk Server (Debian 12 of NixOS)
+### 1. 🖥️ VM 1: Netwerk Server (NixOS)
 
 De centrale server verzorgt netwerkbeheer, opslag en authenticatie.
 
 | Component / Service | Type | Poort(en) | Functie |
 | :--- | :--- | :--- | :--- |
-| **DHCP** (bijv. Kea / Dnsmasq) | Native Service | `67/UDP` (Server)<br>`68/UDP` (Client) | Deelt dynamisch IP-adressen, subnetmasker, gateway en DNS-servers uit aan clients. |
-| **DNS** (bijv. Bind9 / Dnsmasq) | Native Service | `53/UDP`, `53/TCP` | Vertaalt hostnames naar IP-adressen binnen het lab-domein. |
+| **DHCP** (Dnsmasq) | Native Service | `67/UDP` (Server)<br>`68/UDP` (Client) | Deelt dynamisch IP-adressen, subnetmasker, gateway en DNS-servers uit aan clients. |
+| **DNS** (Dnsmasq) | Native Service | `53/UDP`, `53/TCP` | Vertaalt hostnames naar IP-adressen binnen het lab-domein. |
 | **SMB** (Samba) | Native Service | `445/TCP` | Biedt gedeelde netwerkmappen (shares) aan voor clients. |
 | **OpenLDAP** (`slapd`) | **Docker Container** | `389/TCP` (LDAP)<br>`636/TCP` (LDAPS) | Centrale database met gebruikersaccounts, groepen en wachtwoord-hashes. |
 | **phpLDAPadmin** *(optioneel)* | **Docker Container** | `8080/TCP` (Web) | Webinterface om eenvoudig gebruikers, OU's en groepen in LDAP te beheren. |
 
 ---
 
-### 2. 💻 VM 2: Netwerk Client (Debian 12 VM)
+### 2. 💻 VM 2: Netwerk Client (Debian 13 VM)
 
 Een volwaardige Debian VM die demonstreert dat alle serverdiensten correct functioneren.
 
@@ -103,3 +103,10 @@ De scheiding tussen services maakt het instellen van firewall-regels zeer overzi
 2. **Afgeschermde poorten:**
    * Poort `8080` (phpLDAPadmin) alleen toegankelijk maken vanaf je beheer-werkstation, niet vanaf de client VM.
    * Alle overige ongeautoriseerde poorten worden gedropt.
+
+---
+
+## 🧪 Verificatie & Testen
+
+Voor gedetailleerde instructies over hoe je alle services vanaf de Debian 13 client test, zie de [Debian 13 Client VM Test- en Verificatiehandleiding](DEBIAN_CLIENT_TESTING_GUIDE.md).
+

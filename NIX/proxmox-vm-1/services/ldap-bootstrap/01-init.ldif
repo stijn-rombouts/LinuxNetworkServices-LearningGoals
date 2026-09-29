@@ -1,0 +1,61 @@
+# Initial OpenLDAP bootstrap LDIF
+# Base domain: dc=lab,dc=lan
+# Pre-seeds organizational units, groups, and standard test accounts
+
+# Organizational Units
+dn: ou=people,dc=lab,dc=lan
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=lab,dc=lan
+objectClass: organizationalUnit
+ou: groups
+
+# POSIX Group for Lab Users
+dn: cn=labusers,ou=groups,dc=lab,dc=lan
+objectClass: top
+objectClass: posixGroup
+cn: labusers
+gidNumber: 10001
+memberUid: user1
+memberUid: user2
+
+# Test User 1
+dn: uid=user1,ou=people,dc=lab,dc=lan
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: user1
+sn: One
+givenName: User
+cn: User One
+displayName: User One
+uidNumber: 10001
+gidNumber: 10001
+userPassword: Password123!
+loginShell: /bin/bash
+homeDirectory: /home/user1
+mail: user1@lab.lan
+
+# Test User 2
+dn: uid=user2,ou=people,dc=lab,dc=lan
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: user2
+sn: Two
+givenName: User
+cn: User Two
+displayName: User Two
+uidNumber: 10002
+gidNumber: 10001
+userPassword: Password123!
+loginShell: /bin/bash
+homeDirectory: /home/user2
+mail: user2@lab.lan

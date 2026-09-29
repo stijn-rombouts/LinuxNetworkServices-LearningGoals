@@ -55,7 +55,16 @@ Een Linux-client die volledig geïntegreerd en afhankelijk is van de centrale se
    - Proxmox beschikt over een ingebouwde firewall op VM-niveau (filtert direct op de virtuele netwerkinterface van de VM).
    - Hiermee kun je strikte inkomende en uitgaande firewallregels instellen per VM (bijv. poorten voor DHCP `67/68 UDP`, DNS `53 UDP/TCP`, OpenLDAP `389/636 TCP`, SMB `445 TCP` en beheer via SSH `22 TCP`).
 2. **OS-level Firewall (Binnen het gast-OS):**
-   - Host-based firewalling binnen de Linux VM's zelf configureren via tools zoals `ufw`, `nftables` of `firewalld`.
+   - Host-based firewalling binnen de Linux VM's zelf configureren via tools zoals `ufw`, `nftables` of de declaratieven NixOS firewall (`networking.firewall`).
+
+---
+
+## 📚 Documentatie & Verificatie
+
+- **Systeemarchitectuur & Service-indeling:** [ARCHITECTURE.md](ARCHITECTURE.md)
+- **Debian 13 Client VM Test- & Verificatiehandleiding:** [DEBIAN_CLIENT_TESTING_GUIDE.md](DEBIAN_CLIENT_TESTING_GUIDE.md)
+- **DNS & DHCP Implementatieplan (Server VM 1):** [DNS_DHCP_PLAN.md](DNS_DHCP_PLAN.md)
+- **NixOS Serverconfiguratie:** [NIX/proxmox-vm-1](NIX/proxmox-vm-1)
 
 ---
 Original:
