@@ -4,6 +4,7 @@
     (modulesPath + "/profiles/qemu-guest.nix")
     ./base-configuration.nix
     ./disk-config.nix
+    ./services/dnsmasq.nix
   ];
 
   # Proxmox VM with UEFI boot - systemd-boot from base-configuration.nix is used
@@ -27,7 +28,7 @@
     }
   ];
   networking.defaultGateway = "10.0.69.1";
-  networking.nameservers = [ "10.0.69.1" ];
+  networking.nameservers = [ "127.0.0.1" "1.1.1.1" ];
 
   # Disable the firewall entirely
   networking.firewall.enable = false;
