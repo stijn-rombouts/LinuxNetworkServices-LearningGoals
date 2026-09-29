@@ -12,6 +12,7 @@ in
       openldap = {
         image = "osixia/openldap:1.5.0";
         autoStart = true;
+        cmd = [ "--copy-service" ];
         ports = [
           "389:389"
           "636:636"
@@ -26,11 +27,12 @@ in
           LDAP_READONLY_USER_USERNAME = "readonly";
           LDAP_READONLY_USER_PASSWORD = "readonlypassword";
           LDAP_TLS = "false"; # TLS disabled for initial lab simplicity
+          LDAP_REMOVE_CONFIG_AFTER_SETUP = "false";
         };
         volumes = [
           "/var/lib/openldap/data:/var/lib/ldap"
           "/var/lib/openldap/config:/etc/ldap/slapd.d"
-          "/var/lib/openldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro"
+          "/var/lib/openldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom"
         ];
       };
 

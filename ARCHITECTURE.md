@@ -106,7 +106,8 @@ De scheiding tussen services maakt het instellen van firewall-regels zeer overzi
 
 ---
 
-## 🧪 Verificatie & Testen
+## 🧪 Verificatie, Beheer & Testen
 
-Voor gedetailleerde instructies over hoe je alle services vanaf de Debian 13 client test, zie de [Debian 13 Client VM Test- en Verificatiehandleiding](DEBIAN_CLIENT_TESTING_GUIDE.md).
+- **OpenLDAP & phpLDAPadmin Beheerdershandleiding:** [OPENLDAP_PHPLDAPADMIN_GUIDE.md](OPENLDAP_PHPLDAPADMIN_GUIDE.md)
+- **Debian 13 Client VM Test- en Verificatiehandleiding:** [DEBIAN_CLIENT_TESTING_GUIDE.md](DEBIAN_CLIENT_TESTING_GUIDE.md)
 
