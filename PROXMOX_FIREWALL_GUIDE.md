@@ -175,33 +175,6 @@ Ga naar **`nixos-1`** -> **Firewall** -> **Add**:
 > * **Destination IP:** Omdat deze firewallregels direct op de virtuele interface (`net0`) van de VM worden toegepast, is alle inkomende data al fysiek bestemd voor deze VM.
 > * **Source IP:** Omdat `net0` exclusief verbonden is met het geïsoleerde SDN-netwerk (`10.0.69.0/24`), is het instellen van het subnet als bron overbodig. Alleen voor beheerfuncties (**SSH poort 22** en **phpLDAPadmin poort 8080**) stellen we een specifiek bron-IP in (`10.0.69.5`), zodat normale client-VM's geen toegang krijgen tot de beheerinterfaces.
 
-> [!WARNING]
-> **Let op in de PVE Web GUI: `Dest. port` vs `Source port`!**
-> Vul servicepoorten (`22, 53, 389, 445, 8080`) altijd in bij **`Dest. port`** (of `Port`), wat resulteert in de `-dport` vlag. 
-> Als je ze per ongeluk invult bij *Source port* (`-sport`), eist de firewall dat de client verzendt vanaf die poort (terwijl clients willekeurige hoge poorten zoals `52341` gebruiken). Hierdoor worden alle inkomende verbindingen geblokkeerd!
-
-> [!NOTE]
-> **PVE Configuratiebestand (`/etc/pve/firewall/<VMID_SERVER>.fw`):**
-> Achter de schermen schrijft Proxmox deze regels naar `/etc/pve/firewall/<VMID>.fw`. Deze inhoud ziet er als volgt uit:
-> ```ini
-> [OPTIONS]
-> enable: 1
-> policy_in: DROP
-> policy_out: ACCEPT
->
-> [RULES]
-> IN ACCEPT -p icmp -log nolog # ICMP Ping
-> IN ACCEPT -source 10.0.69.5 -p tcp -dport 22 -log nolog # SSH (Jump host only)
-> IN ACCEPT -source 10.0.69.5 -p tcp -dport 8080 -log nolog # phpLDAPadmin (Jump host only)
-> IN ACCEPT -p tcp -dport 139 -log nolog # NetBIOS
-> IN ACCEPT -p tcp -dport 445 -log nolog # Samba SMB
-> IN ACCEPT -p tcp -dport 636 -log nolog # LDAPS
-> IN ACCEPT -p tcp -dport 389 -log nolog # LDAP
-> IN ACCEPT -p tcp -dport 53 -log nolog # DNS TCP
-> IN ACCEPT -p udp -dport 53 -log nolog # DNS UDP
-> IN ACCEPT -p udp -dport 67 -log nolog # DHCP Server broadcast accept
-> ```
-
 ---
 
 ### 2. Client VM: `debian-1` (`10.0.69.143`)
