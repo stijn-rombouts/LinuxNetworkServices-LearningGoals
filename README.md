@@ -238,6 +238,9 @@ The Debian 13 VM (`debian-1`, VM 116) acts as a client completely reliant on `ni
    * PAM integration (`libpam-sss` with `pam_mkhomedir.so`) allows users to execute `su - user1` (or SSH) using their central password (`Password123!`), automatically provisioning `/home/user1` upon first login.
 4. **Network Storage:** Mounts `//server.lab.lan/public` as guest and `//server.lab.lan/secured` with authenticated credentials using `cifs-utils`.
 
+> 📄 **Technical Client Setup Documentation:**  
+> **[DEBIAN_CLIENT_SETUP.md](DEBIAN_CLIENT_SETUP.md)**
+
 ---
 
 ## 🛡️ Part 3: Proxmox Based Firewalling
