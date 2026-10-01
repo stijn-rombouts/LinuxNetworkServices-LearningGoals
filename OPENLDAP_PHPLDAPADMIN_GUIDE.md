@@ -49,10 +49,15 @@ De services zijn vooraf geconfigureerd met de volgende parameters:
 ---
 
 ## 🌐 1. phpLDAPadmin Web GUI (Gebruikersbeheer via de browser)
-## SSH Port Forward using jumphost vm
-```
+
+### Toegang via SSH Port Forwarding (met Jump Host VM 118)
+Omdat poort `8080/TCP` door de Proxmox VE Firewall conform de beveiligingsregels is afgeschermd van reguliere clients en uitsluitend geopend is voor de Jump Host (`10.0.69.5`), open je een SSH-tunnel vanaf je beheerwerkstation:
+
+```bash
 ssh -L 8080:10.0.69.15:8080 root@10.19.10.17
 ```
+Open vervolgens in je lokale browser: `http://localhost:8080` (of direct `http://10.0.69.15:8080` indien verbonden via VPN/SDN).
+
 
 ### Stap 1.1: Webinterface openen
 Navigeer in je browser (vanaf een werkstation met netwerktoegang tot het lab-subnet) naar:
@@ -261,12 +266,12 @@ ldapdelete -x -H ldap://127.0.0.1 \
 
 ## ⚙️ 3. Declaratieve NixOS Configuratie (`services/openldap.nix`)
 
-De OpenLDAP en phpLDAPadmin services worden beheerd via de declaratieven NixOS module in [NIX/proxmox-vm-1/services/openldap.nix](file:///home/stijn/Documents/git/LinuxNetworkServices-LearningGoals/NIX/proxmox-vm-1/services/openldap.nix).
+De OpenLDAP en phpLDAPadmin services worden beheerd via de declaratieven NixOS module in [NIX/proxmox-vm-1/services/openldap.nix](NIX/proxmox-vm-1/services/openldap.nix).
 
 ### Belangrijke configuratiedetails:
 * **`cmd = [ "--copy-service" ];`**: Kopieert de configuratieservice naar `/container/run/service` bij de eerste start. Dit voorkomt dat volume mounts conflicteren met de interne opstartscripts van de container.
 * **`LDAP_REMOVE_CONFIG_AFTER_SETUP = "false";`**: Zorgt dat OpenLDAP de bootstrap bestanden na initialisatie niet probeert te wissen van het host-volume.
-* **`systemd.tmpfiles.rules`**: Zorgt dat de host-mappen `/var/lib/openldap/data`, `config` en `bootstrap` automatisch worden aangemaakt en dat het initiële LDIF-bestand [01-init.ldif](file:///home/stijn/Documents/git/LinuxNetworkServices-LearningGoals/NIX/proxmox-vm-1/services/ldap-bootstrap/01-init.ldif) vanuit de Nix store wordt gekopieerd.
+* **`systemd.tmpfiles.rules`**: Zorgt dat de host-mappen `/var/lib/openldap/data`, `config` en `bootstrap` automatisch worden aangemaakt en dat het initiële LDIF-bestand [01-init.ldif](NIX/proxmox-vm-1/services/ldap-bootstrap/01-init.ldif) vanuit de Nix store wordt gekopieerd.
 
 ### Hoe de database volledig te resetten (indien gewenst):
 Mocht je ooit met een schone lei willen herstarten en de bootstrap data opnieuw willen inladen:

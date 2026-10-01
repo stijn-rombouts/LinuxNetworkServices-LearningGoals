@@ -1,42 +1,34 @@
-# Debian 13 (Trixie) Client VM — Test- en Verificatiehandleiding
-
-Deze handleiding beschrijft stap voor stap hoe je vanaf de **Debian 13 client VM** controleert en aantoont dat alle centrale netwerkdiensten op de **NixOS Server (VM 1)** correct functioneren volgens de leerdoelen in [ARCHITECTURE.md](ARCHITECTURE.md) en [README.md](README.md).
-
+# Debian 13 Client VM — Test- en Verificatiehandleiding
 ---
 
 ## 🗺️ Overzicht van het Lab
 
 ```mermaid
 flowchart LR
-    subgraph Server["🖥️ NixOS Server (10.0.69.15)"]
+    subgraph Server["🖥️ VM 125: NixOS Server (10.0.69.15)"]
         DHCP["DHCP Server (Dnsmasq)\n:67 UDP"]
         DNS["DNS Server (Dnsmasq)\n:53 UDP/TCP"]
-        LDAP["OpenLDAP Docker\n:389 TCP / :636 TCP"]
-        SMB["Samba File Server\n:445 TCP / :139 TCP"]
-        PLA["phpLDAPadmin GUI\n:8080 TCP"]
     end
 
-    subgraph Client["💻 Debian 13 Client (VM 2)"]
+    subgraph Client["💻 VM 116: Debian 13 Client (10.0.69.143 via DHCP)"]
         DHCPC["DHCP Client\n(dynamisch IP: 10.0.69.100-200)"]
         DNSC["DNS Resolver\n(resolv.conf -> 10.0.69.15)"]
-        SSSD["SSSD + PAM + NSS\n(CLI Login user1 / user2)"]
-        SMBC["cifs-utils & smbclient\n(public & secured shares)"]
+
     end
 
     DHCPC -->|1. DHCP Request / Lease| DHCP
     DNSC -->|2. DNS Lookups lab.lan| DNS
-    SSSD -->|3. LDAP Auth via PAM| LDAP
-    SMBC -->|4. CIFS Mounts / File I/O| SMB
 ```
 
 ### 📋 Referentiegegevens
 
 | Onderdeel | Parameter / Waarde | Toelichting |
 | :--- | :--- | :--- |
-| **Server Hostname** | `server.lab.lan` | Centrale NixOS server |
-| **Server IP** | `10.0.69.15` | Statisch IP-adres op VM 1 |
-| **Client Subnet** | `10.0.69.0/24` | Netmask `255.255.255.0` |
-| **Standaard Gateway** | `10.0.69.1` | Gateway van het lab-netwerk |
+| **Server Hostname** | `server.lab.lan` | Centrale NixOS server (VM 125) |
+| **Server IP** | `10.0.69.15` | Statisch IP-adres op VM 125 |
+| **Client Hostname** | `client.lab.lan` / `debian-1` | Debian 13 client (VM 116) |
+| **Client Subnet** | `10.0.69.0/24` | Netmask `255.255.255.0` (SDN op `pve05`) |
+| **Standaard Gateway** | `10.0.69.1` | Gateway van het lab-netwerk (met SNAT) |
 | **DHCP Pool** | `10.0.69.100` – `10.0.69.200` | Dynamisch uitgedeeld door Dnsmasq |
 | **DNS Domein** | `lab.lan` | Zoekdomein op de client |
 | **LDAP Base DN** | `dc=lab,dc=lan` | OpenLDAP boomstructuur |
@@ -45,17 +37,6 @@ flowchart LR
 | **LDAP Admin DN** | `cn=admin,dc=lab,dc=lan` / `adminpassword` | Volledige rechten in LDAP |
 | **Samba Public Share** | `//server.lab.lan/public` | Vrij toegankelijk voor gasten (Read/Write) |
 | **Samba Secured Share** | `//server.lab.lan/secured` | Alleen voor geauthenticeerde users (`Password123!`) |
-
----
-
-## 🛠️ Voorbereiding op Debian 13
-
-Log in op de Debian 13 VM via de Proxmox console als `root` (of via een gebruiker met `sudo`):
-
-```bash
-# Update pakketlijsten
-apt update
-```
 
 ---
 
@@ -68,15 +49,15 @@ Controleren of de Debian 13 client automatisch een IP-adres krijgt binnen de poo
 Kies de netwerkmanager die actief is op je Debian installatie:
 
 #### Optie A: Via `/etc/network/interfaces` (Standaard Debian server)
-Controleer of de interface (bijv. `ens18` of `eth0`) op `dhcp` staat:
+Controleer of de interface (`eth0`) op `dhcp` staat:
 
 ```bash
 cat << 'EOF' > /etc/network/interfaces
 auto lo
 iface lo inet loopback
 
-auto ens18
-iface ens18 inet dhcp
+auto eth0
+iface eth0 inet dhcp
 EOF
 
 # Herstart networking
@@ -88,7 +69,7 @@ systemctl restart networking
 mkdir -p /etc/systemd/network
 cat << 'EOF' > /etc/systemd/network/20-wired.network
 [Match]
-Name=ens18
+Name=eth0
 
 [Network]
 DHCP=ipv4
@@ -104,8 +85,8 @@ systemctl restart systemd-networkd
 apt install -y isc-dhcp-client
 
 # Vrijgeven en nieuw lease ophalen
-dhclient -r ens18
-dhclient -v ens18
+dhclient -r eth0
+dhclient -v eth0
 ```
 
 ---
@@ -114,7 +95,7 @@ dhclient -v ens18
 
 1. **IP-adres controleren:**
    ```bash
-   ip -4 addr show ens18
+   ip -4 addr show eth0
    ```
    * **Verwacht:** Een IP-adres in de reeks `10.0.69.100` t/m `10.0.69.200` met subnetmasker `/24`.
 
@@ -122,7 +103,7 @@ dhclient -v ens18
    ```bash
    ip route show
    ```
-   * **Verwacht:** `default via 10.0.69.1 dev ens18 ...`
+   * **Verwacht:** `default via 10.0.69.1 dev eth0 ...`
 
 3. **DNS resolver instellingen controleren:**
    ```bash
@@ -465,339 +446,3 @@ Om de shares bij elke boot automatisch te mounten:
    ls /mnt/public
    ls /mnt/secured
    ```
-
----
-
-## 🛡️ Test 5: Network & OS Security (Proxmox VE Firewall Validatie)
-
-### Doel
-Aantonen dat het lab-netwerk effectief beveiligd wordt via de **Proxmox VE Firewall** (op hypervisor-niveau vóór de VM interface). We doorlopen twee fasen:
-1. **Fase A (Huidige situatie / Baseline):** Meten wat de huidige status is terwijl de PVE firewall **uitgeschakeld** is.
-2. **Fase B (PVE Firewall Actief):** Configureren van de PVE firewall en aantonen dat labdiensten intact blijven, terwijl beheerpoorten (SSH `22`, phpLDAPadmin `8080`) en gesloten poorten effectief worden afgeschermd voor gewone clients.
-
-> [!NOTE]
-> De host-firewall binnen NixOS staat uitgeschakeld (`networking.firewall.enable = false`). De beveiliging en poortfiltering worden centraal beheerd via de Proxmox VE Firewall op de virtuele interfaces (`net0`/`net1`) van de VM's.
-> Zie voor de diepgaande architectuur en configuratie: [PROXMOX_FIREWALL_GUIDE.md](PROXMOX_FIREWALL_GUIDE.md).
-
-### 📋 Betrokken VM's in Proxmox VE
-* **`debian-1` (Client VM):** `10.0.69.143` (ontvangen via DHCP van `nixos-1`)
-* **`nixos-1` (Server VM):** `10.0.69.15` (statisch IP)
-* **`debian-jump host` (Beheer Host):** `10.19.10.17` (extern via DHCP) en `10.0.69.5` (statisch SDN)
-* **SDN Subnet `10.0.69.0/24`:** Gateway `10.0.69.1` met SNAT (biedt internet, maar géén DNS of DHCP).
-
----
-
-### Stap 5.1: Installatie testtools op Debian 13
-Voer uit op `debian-1`:
-```bash
-apt install -y nmap curl iputils-ping
-```
-
----
-
-### Stap 5.2: Fase A — Baseline Test (Huidige situatie: Firewall UIT in PVE)
-
-In de huidige situatie staat de Proxmox VE firewall uitgeschakeld. Dit brengt twee specifieke gedragingen met zich mee:
-1. **Beheerpoorten staan open voor de client:** Zowel SSH (poort `22`) als de web GUI van phpLDAPadmin (poort `8080`) zijn bereikbaar voor de unprivileged client VM `debian-1`.
-2. **Gesloten poorten geven `closed` i.p.v. `filtered`:** Omdat er geen firewall is die pakketten blokkeert (DROP), stuurt de Linux kernel van VM 1 direct een TCP RST-vlag terug. Hierdoor ziet een scanner zoals `nmap` de status `closed`.
-
-#### 1. Baseline poortscan uitvoeren vanaf `debian-1`:
-```bash
-nmap -Pn -p 22,53,80,139,389,445,636,3306,8080 server.lab.lan
-```
-* **Verwacht resultaat (Baseline - Firewall UIT):**
-  ```text
-  PORT     STATE  SERVICE
-  22/tcp   open   ssh           <-- Open voor gewone client!
-  53/tcp   open   domain
-  80/tcp   closed http          <-- Status 'closed' (TCP RST: geen firewall drop!)
-  139/tcp  open   netbios-ssn
-  389/tcp  open   ldap
-  445/tcp  open   microsoft-ds
-  636/tcp  open   ldaps
-  3306/tcp closed mysql         <-- Status 'closed' (geen firewall drop!)
-  8080/tcp open   http-proxy    <-- Veiligheidsrisico: phpLDAPadmin bereikbaar voor client!
-  ```
-
-#### 2. Baseline web GUI test vanaf `debian-1`:
-```bash
-curl -I --connect-timeout 3 http://server.lab.lan:8080
-```
-* **Verwacht resultaat:** Geeft direct `HTTP/1.1 200 OK` (of `302 Found`). Dit toont aan dat de webinterface momenteel onbeschermd toegankelijk is voor gebruikers op de client VM.
-
----
-
-### Stap 5.3: Proxmox VE Firewall Instellen voor Server & Client
-
-Stel in de Proxmox VE Web GUI de volgende firewallconfiguratie in:
-
-#### 1. Globale activatie (Cluster & Interfaces):
-* **Datacenter -> Firewall -> Options:** Zet `Firewall: Yes`.
-* **Voor elke VM (`nixos-1`, `debian-1`, `debian-jump host`):** Ga naar `Hardware` -> dubbelklik op `Network Device (net0)` -> Vink **Firewall** aan. *(Zonder dit vinkje is de firewall per VM inactief!)*.
-
-#### 2. Regels op `nixos-1` (Server VM — `10.0.69.15`):
-* **Options:** `Firewall: Yes`, `Input Policy: DROP`, `Output Policy: ACCEPT`.
-* **Firewall Rules:**
-  1. `IN ACCEPT -p icmp` *(Ping)*
-  2. `IN ACCEPT -source 10.0.69.5 -p tcp --dport 22` *(SSH: **Alleen** Jump Host)*
-  3. `IN ACCEPT -source 10.0.69.5 -p tcp --dport 8080` *(phpLDAPadmin: **Alleen** Jump Host)*
-  4. `IN ACCEPT -p tcp --dport 139` *(NetBIOS)*
-  5. `IN ACCEPT -p tcp --dport 445` *(Samba)*
-  6. `IN ACCEPT -p tcp --dport 636` *(LDAPS)*
-  7. `IN ACCEPT -p tcp --dport 389` *(LDAP)*
-  8. `IN ACCEPT -p tcp --dport 53` *(DNS TCP)*
-  9. `IN ACCEPT -p udp --dport 53` *(DNS UDP)*
-  10. `IN ACCEPT -p udp --dport 67` *(DHCP Server broadcast: Source leeg laten!)*
-
-> [!TIP]
-> Het instellen van een bron-IP (`Source IP`) is voor algemene labdiensten (zoals DNS, SMB, LDAP) leeg gelaten omdat `net0` uitsluitend aan het geïsoleerde SDN-netwerk hangt. Alleen voor SSH (`22`) en phpLDAPadmin (`8080`) is specifiek de Jump Host (`10.0.69.5`) ingesteld.
-
-#### 3. Regels op `debian-1` (Client VM — `10.0.69.143`):
-* **Options:** `Firewall: Yes`, `Input Policy: DROP`, `Output Policy: ACCEPT`.
-* **Firewall Rules:**
-  1. `IN ACCEPT -p udp --dport 68 -source 10.0.69.15` *(DHCP replies)*
-  2. `IN ACCEPT -p tcp --dport 22 -source 10.0.69.5` *(SSH vanaf Jump Host)*
-  3. `IN ACCEPT -p icmp` *(Ping)*
-
-*(Voor de volledige handleiding inclusief de Jump Host configuratie, zie [PROXMOX_FIREWALL_GUIDE.md](PROXMOX_FIREWALL_GUIDE.md)).*
-
----
-
-### Stap 5.4: Fase B — Post-Firewall Verificatiestappen (Firewall AAN)
-
-Nadat de firewallregels in PVE zijn geactiveerd, voer je de validatie uit vanaf **`debian-1`**:
-
-#### 1. Scan toegestane services (Moeten OPEN blijven):
-```bash
-nmap -Pn -p 53,139,389,445,636 server.lab.lan
-```
-* **Verwacht:** Alle labdiensten tonen ongewijzigd de status `open`.
-
-#### 2. Scan afgeschermde en ongebruikte poorten (Security & Drop validatie):
-```bash
-nmap -Pn -p 22,80,3306,8080 server.lab.lan
-```
-* **Verwacht resultaat:**
-  ```text
-  PORT     STATE    SERVICE
-  22/tcp   filtered ssh           <-- Geblokkeerd door PVE!
-  80/tcp   filtered http          <-- Status veranderd van 'closed' naar 'filtered'!
-  3306/tcp filtered mysql         <-- Status veranderd van 'closed' naar 'filtered'!
-  8080/tcp filtered http-proxy    <-- phpLDAPadmin effectief afgeschermd!
-  ```
-  > [!TIP]
-  > Het verschil tussen `closed` (fase A) en `filtered` (fase B) is hét bewijs dat de Proxmox VE firewall actief pakketten onderschept en dropt vóórdat de VM kernel kan reageren.
-
-#### 3. Negatieve test phpLDAPadmin vanaf Debian client:
-```bash
-curl -I --connect-timeout 3 http://server.lab.lan:8080
-```
-* **Verwacht:** `curl: (28) Connection timed out after 3001 milliseconds`.
-
-#### 4. Negatieve test SSH naar server vanaf Debian client:
-```bash
-ssh -o ConnectTimeout=3 nixos@server.lab.lan
-```
-* **Verwacht:** `Connection timed out`.
-
-#### 5. Verifieer werking van centrale diensten en DHCP renewal:
-```bash
-# DNS controle
-dig @10.0.69.15 server.lab.lan +short
-
-# LDAP controle
-ldapsearch -x -H ldap://server.lab.lan -D "cn=readonly,dc=lab,dc=lan" -w readonlypassword -b "ou=people,dc=lab,dc=lan" uid
-
-# Samba share listing
-smbclient -L //server.lab.lan -N
-
-# DHCP renewal test
-dhclient -r ens18 && dhclient -v ens18
-```
-* **Verwacht:** Alle centrale netwerkdiensten blijven vlekkeloos functioneren en de client behoudt/vernieuwt zijn lease (`10.0.69.143`).
-
----
-
-### Stap 5.5: Beheervalidatie vanaf de Jump Host (`debian-jump host`)
-
-Log in op de jump host (`10.19.10.17` / `10.0.69.5`) om te controleren of beheer wel mogelijk is:
-
-1. **phpLDAPadmin Web GUI vanaf Jump Host:**
-   ```bash
-   curl -I http://10.0.69.15:8080
-   ```
-   * **Verwacht:** `HTTP/1.1 200 OK` (of 302 redirect). Open eventueel via een SSH tunnel of proxy in je browser: `http://10.0.69.15:8080`.
-2. **SSH naar Server vanaf Jump Host:**
-   ```bash
-   ssh -o ConnectTimeout=3 nixos@10.0.69.15
-   ```
-   * **Verwacht:** Verbinding wordt direct gelegd.
-
----
-
-## 🚀 Alles-in-één Geautomatiseerd Testscript
-
-Voor snelle demonstratie en evaluatie kun je het volgende script draaien op de Debian 13 VM. Het controleert alle onderdelen inclusief de netwerksecurity achter elkaar en geeft een overzichtelijk rapport:
-
-```bash
-cat << 'EOF' > /root/test-all-services.sh
-#!/usr/bin/env bash
-set -e
-
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
-BOLD='\033[1m'
-
-pass() { echo -e "  [${GREEN}PASS${NC}] $1"; }
-fail() { echo -e "  [${RED}FAIL${NC}] $1"; }
-
-echo -e "\n${BOLD}====================================================${NC}"
-echo -e "${BOLD}   Debian 13 Client — Linux Network Services Test   ${NC}"
-echo -e "${BOLD}====================================================${NC}\n"
-
-# 1. DHCP & IP
-echo -e "${BOLD}1. Netwerk & DHCP Configuratie:${NC}"
-CLIENT_IP=$(ip -4 addr show ens18 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || true)
-if [[ "$CLIENT_IP" =~ ^10\.0\.69\.(1[0-9]{2}|200)$ ]]; then
-    pass "IP-adres ($CLIENT_IP) ligt binnen DHCP pool 10.0.69.100-200"
-else
-    fail "Ongeldig of geen IP-adres gevonden: $CLIENT_IP"
-fi
-
-DEFAULT_GW=$(ip route | grep default | awk '{print $3}')
-if [ "$DEFAULT_GW" == "10.0.69.1" ]; then
-    pass "Standaard gateway is $DEFAULT_GW"
-else
-    fail "Onjuiste gateway: $DEFAULT_GW"
-fi
-
-# 2. DNS
-echo -e "\n${BOLD}2. DNS Naamresolutie:${NC}"
-SERVER_DNS=$(dig @10.0.69.15 server.lab.lan +short)
-if [ "$SERVER_DNS" == "10.0.69.15" ]; then
-    pass "server.lab.lan resolveert naar 10.0.69.15"
-else
-    fail "server.lab.lan kon niet worden geresolved"
-fi
-
-INTERNET_DNS=$(dig @10.0.69.15 google.com +short | head -n 1)
-if [ -n "$INTERNET_DNS" ]; then
-    pass "Upstream DNS forwarding functioneert (google.com -> $INTERNET_DNS)"
-else
-    fail "Upstream DNS forwarding mislukt"
-fi
-
-# 3. LDAP & SSSD
-echo -e "\n${BOLD}3. OpenLDAP & SSSD Authenticatie:${NC}"
-if getent passwd user1 > /dev/null 2>&1; then
-    pass "LDAP gebruiker 'user1' gevonden via getent (NSS)"
-else
-    fail "LDAP gebruiker 'user1' NIET gevonden"
-fi
-
-if getent group labusers > /dev/null 2>&1; then
-    pass "LDAP groep 'labusers' gevonden via getent"
-else
-    fail "LDAP groep 'labusers' NIET gevonden"
-fi
-
-# 4. Samba
-echo -e "\n${BOLD}4. Samba File Server:${NC}"
-if smbclient -L //server.lab.lan -N > /dev/null 2>&1; then
-    pass "Samba shares ontdekt op server.lab.lan"
-else
-    fail "Samba discovery mislukt"
-fi
-
-if smbclient //server.lab.lan/public -N -c "ls" > /dev/null 2>&1; then
-    pass "Public share gast-toegang geslaagd"
-else
-    fail "Public share gast-toegang geweigerd"
-fi
-
-if smbclient //server.lab.lan/secured -U user1%Password123! -c "ls" > /dev/null 2>&1; then
-    pass "Secured share authenticatie (user1) geslaagd"
-else
-    fail "Secured share authenticatie met user1 mislukt"
-fi
-
-# 5. Firewall & Security Isolatie
-echo -e "\n${BOLD}5. Proxmox VE Firewall Validatie:${NC}"
-if curl -s --connect-timeout 2 http://server.lab.lan:8080 >/dev/null 2>&1; then
-    fail "Beveiligingsrisico: phpLDAPadmin (poort 8080) is direct bereikbaar vanaf client!"
-else
-    pass "phpLDAPadmin (poort 8080) is effectief geblokkeerd voor de client"
-fi
-
-if nc -z -w 2 server.lab.lan 22 >/dev/null 2>&1; then
-    fail "Beveiligingsrisico: SSH (poort 22) is direct bereikbaar vanaf client!"
-else
-    pass "Directe SSH toegang tot server (poort 22) is geblokkeerd voor client"
-fi
-
-echo -e "\n${BOLD}====================================================${NC}"
-echo -e "${BOLD}              Verificatie Afgerond!                 ${NC}"
-echo -e "${BOLD}====================================================${NC}\n"
-EOF
-
-chmod +x /root/test-all-services.sh
-```
-
-Draai het script eenvoudig via:
-```bash
-/root/test-all-services.sh
-```
-
----
-
-## 🔧 Veelvoorkomende Problemen & Oplossingen (Troubleshooting)
-
-### 1. SSSD toont gewijzigde gebruikers niet direct
-* **Oorzaak:** SSSD cacheert LDAP gegevens agressief.
-* **Oplossing:** Leeg de SSSD cache:
-  ```bash
-  sss_cache -E
-  systemctl restart sssd
-  ```
-
-### 2. `su - user1` geeft `Permission denied` op `/etc/sssd/sssd.conf`
-* **Oorzaak:** Bestandspermissies van `sssd.conf` zijn te open.
-* **Oplossing:**
-  ```bash
-  chmod 600 /etc/sssd/sssd.conf
-  chown root:root /etc/sssd/sssd.conf
-  systemctl restart sssd
-  ```
-
-### 3. CIFS mount geeft `mount error(13): Permission denied`
-* **Oorzaak:** Foutief wachtwoord of SMBNTLM authenticatie mismatch.
-* **Oplossing:**
-  * Controleer of het wachtwoord exact `Password123!` is.
-  * Controleer op VM 1 of de gebruiker in passdb zit:
-    ```bash
-    pdbedit -L -v -u user1
-    ```
-  * Reset eventueel handmatig het Samba-wachtwoord op VM 1:
-    ```bash
-    (echo "Password123!"; echo "Password123!") | smbpasswd -s -a user1
-    ```
-
-### 4. DHCP lease wordt niet vernieuwd
-* **Oorzaak:** Oude lease cache op de client of ontbrekende DHCP UDP 67 broadcast regel op VM 1.
-* **Oplossing:**
-  ```bash
-  dhclient -r -v ens18
-  rm -f /var/lib/dhcp/dhclient.leases
-  dhclient -v ens18
-  ```
-
-### 5. Client kan internet niet op ondanks geldige DHCP lease
-* **Oorzaak:** SDN gateway `10.0.69.1` mist SNAT of DNS upstream forwarding ontbreekt in dnsmasq.
-* **Oplossing:**
-  * Test ping naar gateway: `ping -c 2 10.0.69.1`
-  * Test upstream DNS query: `dig @10.0.69.15 1.1.1.1 +short`
-  * Controleer in PVE onder SDN -> VNets of `SNAT` is aangevinkt op het `10.0.69.0/24` subnet.
-
-
-
