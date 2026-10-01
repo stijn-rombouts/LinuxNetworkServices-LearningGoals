@@ -64,6 +64,7 @@ Een Linux-client die volledig geïntegreerd en afhankelijk is van de centrale se
 - **Systeemarchitectuur & Service-indeling:** [ARCHITECTURE.md](ARCHITECTURE.md)
 - **OpenLDAP & phpLDAPadmin Beheerdershandleiding:** [OPENLDAP_PHPLDAPADMIN_GUIDE.md](OPENLDAP_PHPLDAPADMIN_GUIDE.md)
 - **Debian 13 Client VM Test- & Verificatiehandleiding:** [DEBIAN_CLIENT_TESTING_GUIDE.md](DEBIAN_CLIENT_TESTING_GUIDE.md)
+- **Proxmox VE Firewall Architectuur- & Configuratiehandleiding:** [PROXMOX_FIREWALL_GUIDE.md](PROXMOX_FIREWALL_GUIDE.md)
 - **DNS & DHCP Implementatieplan (Server VM 1):** [DNS_DHCP_PLAN.md](DNS_DHCP_PLAN.md)
 - **NixOS Serverconfiguratie:** [NIX/proxmox-vm-1](NIX/proxmox-vm-1)
 

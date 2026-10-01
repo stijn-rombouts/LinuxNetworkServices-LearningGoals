@@ -110,4 +110,6 @@ De scheiding tussen services maakt het instellen van firewall-regels zeer overzi
 
 - **OpenLDAP & phpLDAPadmin Beheerdershandleiding:** [OPENLDAP_PHPLDAPADMIN_GUIDE.md](OPENLDAP_PHPLDAPADMIN_GUIDE.md)
 - **Debian 13 Client VM Test- en Verificatiehandleiding:** [DEBIAN_CLIENT_TESTING_GUIDE.md](DEBIAN_CLIENT_TESTING_GUIDE.md)
+- **Proxmox VE Firewall Architectuur & Validatiehandleiding:** [PROXMOX_FIREWALL_GUIDE.md](PROXMOX_FIREWALL_GUIDE.md)
+
 
