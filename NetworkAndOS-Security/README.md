@@ -13,3 +13,9 @@
   - Architectural Case Study: Cloud-Native SOC with Microsoft Sentinel (Ingestion, Normalization, KQL Detection, Fusion, SOAR, Workbooks)
   - Multi-Stage Attack Correlation & End-to-End Walkthrough
   - Engineering Trade-offs: Telemetry Costs, Rule Tuning, Human-in-the-Loop SOAR Governance, and Azure Arc Hybrid Reach
+- **[Learning Goal 11.10: Endpoint Security Testing & Hardening (CIS Benchmarks & Scanners)](11-10/README.md)**
+  - CIS Benchmark Overview & Scanners (`verify_compliance.sh`, Lynis, OpenSCAP)
+  - Hands-On Endpoint Security Audit & Baseline Results on Target Host
+  - Gap Analysis & Remediation Guide: Fixing Legacy Filesystems, Network Sysctl, and SSH Weaknesses
+  - Automated Patching & Verification: Previewing Dry-Runs and Measuring Compliance Score Improvement (47% to 94%)
+
