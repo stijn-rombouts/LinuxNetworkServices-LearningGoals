@@ -18,4 +18,11 @@
   - Hands-On Endpoint Security Audit & Baseline Results on Target Host
   - Gap Analysis & Remediation Guide: Fixing Legacy Filesystems, Network Sysctl, and SSH Weaknesses
   - Automated Patching & Verification: Previewing Dry-Runs and Measuring Compliance Score Improvement (47% to 94%)
+- **[Learning Goal 11.12: Advanced Network Traffic Analysis in Kubernetes (Kubeshark)](11-12/README.md)**
+  - Cloud-Native Packet Analysis Challenges (Pod Churn, CNI Overlays, Encrypted mTLS)
+  - Tool Comparison & Selection: Kubeshark (eBPF DPI & Live UI) vs. Isopcap (Isovalent Enterprise)
+  - Hands-On Deployment on Debian 13 VM (K3s): Real-Time eBPF Traffic Tapping and Microservices
+  - Deep Packet Inspection with KFL: POST Payloads, HTTP 404 Errors, Bearer Tokens, URL Routing, and CoreDNS
+  - Security Findings & Architectural Insights: Cleartext Credentials in Transit, NetworkPolicies, and mTLS Recommendations
+
 
